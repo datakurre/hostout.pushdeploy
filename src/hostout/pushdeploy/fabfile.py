@@ -163,12 +163,11 @@ def bootstrap(*args):
 
 
 def annotate():
-    """Executes the local buildout and returns a dictionary with annotated
-    buildout variables for it."""
+    """Read buildout configuration and returns 'buildout' section as a dict."""
 
-    buildout = Buildout("%s/%s" % (env.hostout.options.path,
-                                   env.hostout.options.buildout), [])
-    return buildout
+    buildout = Buildout("%s/%s" % (env.hostout.options['path'],
+                                   env.hostout.options['buildout']), [])
+    return buildout['buildout']
 
 
 def buildout(*args):
@@ -194,11 +193,11 @@ def buildout(*args):
     # Chown
     annotations = annotate()
     bin_directory = os.path.join(buildout_directory,
-                                 annotations['buildout']['bin-directory'])
+                                 annotations['bin-directory'])
     eggs_directory = os.path.join(buildout_directory,
-                                  annotations['buildout']['eggs-directory'])
+                                  annotations['eggs-directory'])
     parts_directory = os.path.join(buildout_directory,
-                                   annotations['buildout']['parts-directory'])
+                                   annotations['parts-directory'])
 
     cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
                                     parts_directory, eggs_directory)
@@ -304,11 +303,11 @@ def push():
     # Push
     annotations = annotate()
     bin_directory = os.path.join(buildout_directory,
-                                 annotations['buildout']['bin-directory'])
+                                 annotations['bin-directory'])
     eggs_directory = os.path.join(buildout_directory,
-                                  annotations['buildout']['eggs-directory'])
+                                  annotations['eggs-directory'])
     parts_directory = os.path.join(buildout_directory,
-                                   annotations['buildout']['parts-directory'])
+                                   annotations['parts-directory'])
 
     rsync(bin_directory,
           os.path.join(bin_directory, "*"),
@@ -366,7 +365,7 @@ def stage_supervisor():
 
     # Configure
     annotations = annotate()
-    parts_directory = annotations['buildout']['parts-directory']
+    parts_directory = annotations['parts-directory']
 
     cmd = "cp %s %s"\
         % (os.path.join(parts_directory, os.path.basename(supervisor_conf)),
@@ -394,7 +393,7 @@ def deploy_supervisor():
 
     # Sync
     annotations = annotate()
-    parts_directory = annotations['buildout']['parts-directory']
+    parts_directory = annotations['parts-directory']
 
     rsync(supervisor_conf,
           os.path.join(parts_directory,
