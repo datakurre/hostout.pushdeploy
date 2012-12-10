@@ -415,29 +415,6 @@ def deploy_supervisor():
         run("supervisorctl update")
 
 
-def deploy_varnishconf():
-    """Updates the remote supervisor configuration. Supervisord configuration
-    path must be defined by setting a hostout-option ``supervisor-conf``."""
-
-    if os.path.isfile('parts/system/
-    supervisor_conf = env.hostout.options['supervisor-conf']
-
-    # Sync
-    annotations = annotate()
-    parts_directory = annotations['parts-directory']
-
-    rsync(supervisor_conf,
-          os.path.join(parts_directory,
-                       os.path.basename(supervisor_conf)),
-          reverse=True, delete=False)
-
-    # Update
-    if env.hostout.options.get('remote-sudo') == "true":
-        sudo("supervisorctl update")
-    else:
-        run("supervisorctl update")
-
-
 def deploy_supervisor():
     """Updates the remote supervisor configuration. Supervisord configuration
     path must be defined by setting a hostout-option ``supervisor-conf``."""
