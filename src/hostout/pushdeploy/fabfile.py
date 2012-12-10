@@ -321,6 +321,14 @@ def push():
           os.path.join(parts_directory, "*"),
           reverse=True, delete=False)
 
+    # Put system conf in place
+    cmd = "cp -R %s /etc" % parts_directory + '/system/etc'
+
+    if env.hostout.options.get('remote-sudo') == "true":
+        sudo(cmd)
+    else:
+        run(cmd)
+
     # Chown
     cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
                                     parts_directory, eggs_directory)
@@ -383,6 +391,51 @@ def stage_supervisor():
     if output.running:
         print("[localhost] stage_supervisor: %s" % cmd)
     local(cmd)
+
+
+def deploy_supervisor():
+    """Updates the remote supervisor configuration. Supervisord configuration
+    path must be defined by setting a hostout-option ``supervisor-conf``."""
+
+    supervisor_conf = env.hostout.options['supervisor-conf']
+
+    # Sync
+    annotations = annotate()
+    parts_directory = annotations['parts-directory']
+
+    rsync(supervisor_conf,
+          os.path.join(parts_directory,
+                       os.path.basename(supervisor_conf)),
+          reverse=True, delete=False)
+
+    # Update
+    if env.hostout.options.get('remote-sudo') == "true":
+        sudo("supervisorctl update")
+    else:
+        run("supervisorctl update")
+
+
+def deploy_varnishconf():
+    """Updates the remote supervisor configuration. Supervisord configuration
+    path must be defined by setting a hostout-option ``supervisor-conf``."""
+
+    if os.path.isfile('parts/system/
+    supervisor_conf = env.hostout.options['supervisor-conf']
+
+    # Sync
+    annotations = annotate()
+    parts_directory = annotations['parts-directory']
+
+    rsync(supervisor_conf,
+          os.path.join(parts_directory,
+                       os.path.basename(supervisor_conf)),
+          reverse=True, delete=False)
+
+    # Update
+    if env.hostout.options.get('remote-sudo') == "true":
+        sudo("supervisorctl update")
+    else:
+        run("supervisorctl update")
 
 
 def deploy_supervisor():
