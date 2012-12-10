@@ -321,14 +321,6 @@ def push():
           os.path.join(parts_directory, "*"),
           reverse=True, delete=False)
 
-    # Put system conf in place
-    cmd = "cp -R %s /etc" % parts_directory + '/system/etc'
-
-    if env.hostout.options.get('remote-sudo') == "true":
-        sudo(cmd)
-    else:
-        run(cmd)
-
     # Chown
     cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
                                     parts_directory, eggs_directory)
@@ -350,6 +342,23 @@ def push():
             sudo("chown %s -R %s" % (effective_user, etc_directory))
         else:
             run("chown %s -R %s" % (effective_user, etc_directory))
+
+
+def deploy_etc():
+    """Copies system config from parts/system/etc to /etc."""
+
+    buildout_directory = env.hostout.options["path"]
+    annotations = annotate()
+    parts_directory = os.path.join(buildout_directory,
+                                   annotations['parts-directory'])
+
+    if os.path.isdir("%s/system/etc" % parts_directory):
+        cmd = "cp -R %s /etc" % parts_directory + '/system/etc'
+
+        if env.hostout.options.get('remote-sudo') == "true":
+            sudo(cmd)
+        else:
+            run(cmd)
 
 
 def deploy():
