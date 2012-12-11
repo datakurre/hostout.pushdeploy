@@ -378,6 +378,7 @@ def deploy():
 
     # Push the code
     push()
+    deploy_etc()
 
     # Restart the site
     if env.hostout.options.get('remote-sudo') == "true":
