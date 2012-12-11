@@ -291,7 +291,7 @@ def stage():
     buildout()
 
     # Restart
-    restart()
+    # restart()
 
 
 def push():
