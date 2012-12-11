@@ -72,7 +72,7 @@ def rsync(from_path, to_path, reverse=False,
         'extra': extra_opts
     }
 
-    options = ("%(delete)s%(exclude)s --progress -pthlrvz "
+    options = ("%(delete)s%(exclude)s --progress -pthlrz "
                "%(extra)s %(rsh)s") % options_map
 
     # Interpret direction and define command
@@ -320,6 +320,8 @@ def push():
                                   annotations['eggs-directory'])
     parts_directory = os.path.join(buildout_directory,
                                    annotations['parts-directory'])
+    var_directory = os.path.join(buildout_directory,
+                                 annotations['var-directory'])
 
     rsync(bin_directory,
           os.path.join(bin_directory, "*"),
@@ -332,6 +334,10 @@ def push():
     rsync(parts_directory,
           os.path.join(parts_directory, "*"),
           reverse=True, delete=False)
+
+    rsync(var_directory,
+          os.path.join(var_directory, "*"),
+          reverse=True, delete=False, extra_opts='--ignore-existing')
 
     # Chown
     cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
