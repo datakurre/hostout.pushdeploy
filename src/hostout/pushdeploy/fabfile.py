@@ -320,8 +320,7 @@ def push():
                                   annotations['eggs-directory'])
     parts_directory = os.path.join(buildout_directory,
                                    annotations['parts-directory'])
-    var_directory = os.path.join(buildout_directory,
-                                 annotations['var-directory'])
+    var_directory = os.path.join(buildout_directory, 'var')
 
     rsync(bin_directory,
           os.path.join(bin_directory, "*"),
@@ -340,8 +339,9 @@ def push():
           reverse=True, delete=False, extra_opts='--ignore-existing')
 
     # Chown
-    cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
-                                    parts_directory, eggs_directory)
+    cmd = "chown %s -R %s %s %s %s" % (effective_user, bin_directory,
+                                    parts_directory, eggs_directory,
+                                    var_directory)
     if env.hostout.options.get('remote-sudo') == "true":
         sudo(cmd)
     else:
