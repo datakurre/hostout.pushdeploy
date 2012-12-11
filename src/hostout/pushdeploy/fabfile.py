@@ -123,6 +123,9 @@ def update(branch=None):
         cmd = "hg pull"
         if env.hostout.options.get('local-sudo') == "true":
             cmd = "sudo %s" % cmd
+        elif env.hostout.options.get('buildout-user'):
+            cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
+                                     cmd)
         if output.running:
             print("[localhost] update: %s" % cmd)
         local(cmd)
