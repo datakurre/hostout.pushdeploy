@@ -158,7 +158,7 @@ def bootstrap(*args):
         if env.hostout.options.get('local-sudo') == "true":
             cmd = "sudo %s" % cmd
         elif env.hostout.options.get('buildout-user'):
-            cmd = "sudo %s %s" % (env.hostout.options.get('buildout-user'),
+            cmd = "sudo -u %s %s" % (env.hostout.options.get('buildout-user'),
                                   cmd)
         if output.running:
             print("[localhost] bootstrap: %s" % cmd)
@@ -190,7 +190,7 @@ def buildout(*args):
         if env.hostout.options.get('local-sudo') == "true":
             cmd = "sudo %s" % cmd
         elif env.hostout.options.get('buildout-user'):
-            cmd = "sudo %s %s" % (env.hostout.options.get('buildout-user'),
+            cmd = "sudo -u %s %s" % (env.hostout.options.get('buildout-user'),
                                   cmd)
         if output.running:
             print("[localhost] buildout: %s" % cmd)
