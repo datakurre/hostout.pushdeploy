@@ -336,7 +336,8 @@ def push():
 
     rsync(var_directory,
           os.path.join(var_directory, "*"),
-          reverse=True, delete=False, extra_opts='--ignore-existing')
+          reverse=True, delete=False, exclude=('blobstorage*', '*.fs','*.old','*.zip'),
+          extra_opts='--ignore-existing')
 
     # Chown
     cmd = "chown %s -R %s %s %s %s" % (effective_user, bin_directory,
