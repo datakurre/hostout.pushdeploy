@@ -336,7 +336,7 @@ def push():
 
     rsync(var_directory,
           os.path.join(var_directory, "*"),
-          reverse=True, delete=False, exclude=('blobstorage*', '*.fs','*.old','*.zip'),
+          reverse=True, delete=False, exclude=('blobstorage*', '*.fs','*.old','*.zip', '*.log'),
           extra_opts='--ignore-existing')
 
     # Chown
