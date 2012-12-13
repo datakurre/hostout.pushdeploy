@@ -102,6 +102,9 @@ def clone(repository, branch=None):
     cmd = "hg clone %s%s %s" % (repository, branch, path)
     if env.hostout.options.get('local-sudo') == "true":
         cmd = "sudo %s" % cmd
+    elif env.hostout.options.get('buildout-user'):
+        cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
+                                 cmd)
     if output.running:
         print("[localhost] clone: %s" % cmd)
     local(cmd)
@@ -110,6 +113,9 @@ def clone(repository, branch=None):
     cmd = "chown %s %s" % (effective_user, path)
     if env.hostout.options.get('local-sudo') == "true":
         cmd = "sudo %s" % cmd
+    elif env.hostout.options.get('buildout-user'):
+        cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
+                                 cmd)
     if output.running:
         print("[localhost] clone: %s" % cmd)
     local(cmd)
