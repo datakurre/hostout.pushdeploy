@@ -378,7 +378,8 @@ def deploy_etc():
                                    annotations['parts-directory'])
 
     if os.path.isdir("%s/system/etc" % parts_directory):
-        cmd = "cp -R %s /etc" % (parts_directory + '/system/etc/*')
+        cmd = "cp -R %s /etc;supervisorctl reread;supervisorctl update" %\
+               (parts_directory + '/system/etc/*')
 
         if env.hostout.options.get('remote-sudo') == "true":
             sudo(cmd)
