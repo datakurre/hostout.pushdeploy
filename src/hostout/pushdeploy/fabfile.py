@@ -344,7 +344,7 @@ def push():
           os.path.join(parts_directory, "*"),
           reverse=True, delete=False)
 
-    if products_directory:
+    if os.path.isdir(products_directory):
         rsync(products_directory,
               os.path.join(products_directory, "*"),
               reverse=True, delete=False)
