@@ -332,6 +332,9 @@ def push():
 
     var_directory = os.path.join(buildout_directory, 'var')
 
+    chown_directorys = [bin_directory, parts_directory, eggs_directory,
+                        var_directory]
+
     rsync(bin_directory,
           os.path.join(bin_directory, "*"),
           reverse=True, delete=False)
@@ -345,6 +348,7 @@ def push():
           reverse=True, delete=False)
 
     if os.path.isdir(products_directory):
+        chown_directorys.append(products_directory)
         rsync(products_directory,
               os.path.join(products_directory, "*"),
               reverse=True, delete=False)
@@ -355,10 +359,8 @@ def push():
           exclude=('blobstorage*', '*.fs','*.old','*.zip', '*.log', '*.backup'),
           extra_opts='--ignore-existing')
 
-    # Chown
-    cmd = "chown %s -R %s %s %s %s" % (effective_user, bin_directory,
-                                       parts_directory, eggs_directory,
-                                       var_directory, products_directory)
+    for folder in chown_directorys:
+        cmd = "chown %s -R %s" % (effective_user, folder)
 
     if env.hostout.options.get('remote-sudo') == "true":
         sudo(cmd)
