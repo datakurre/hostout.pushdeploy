@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Fabfile for hostout.pushdeploy to describe all the magic."""
 
-import re
 import os
 
 from zc.buildout.buildout import Buildout
@@ -9,18 +8,18 @@ from zc.buildout.buildout import Buildout
 from fabric.state import (
     env,
     output
-    )
+)
 
 from fabric.network import (
     normalize,
     key_filenames
-    )
+)
 
 from fabric.operations import (
     run,
     sudo,
     local
-    )
+)
 
 from fabric.context_managers import lcd
 
@@ -203,7 +202,7 @@ def buildout(*args):
             cmd = "sudo %s" % cmd
         elif env.hostout.options.get('buildout-user'):
             cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                  cmd)
+                                     cmd)
         if output.running:
             print("[localhost] buildout: %s" % cmd)
         local(cmd)
@@ -217,8 +216,10 @@ def buildout(*args):
     parts_directory = os.path.join(buildout_directory,
                                    annotations['parts-directory'])
 
-    cmd = "chown %s -R %s %s %s" % (effective_user, bin_directory,
-                                    parts_directory, eggs_directory)
+    cmd = "chown -R %(user)s %(bin)s %(parts)s %(eggs)s" %\
+        {'user': effective_user, 'bin': bin_directory,
+         'parts': parts_directory, 'eggs': eggs_directory}
+
     if env.hostout.options.get('local-sudo') == "true":
         cmd = "sudo %s" % cmd
     if output.running:
@@ -228,7 +229,7 @@ def buildout(*args):
     # Chown "etc" (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, "etc")
     if os.path.exists(etc_directory):
-        cmd = "chown %s -R %s" % (effective_user, etc_directory)
+        cmd = "chown -R %s %s" % (effective_user, etc_directory)
         if env.hostout.options.get('local-sudo') == "true":
             cmd = "sudo %s" % cmd
         if output.running:
@@ -263,7 +264,7 @@ def pull():
           delete=True)
 
     # Chown
-    cmd = "chown %s -R %s" % (effective_user, var_directory)
+    cmd = "chown -R %s %s" % (effective_user, var_directory)
     if env.hostout.options.get('local-sudo') == "true":
         cmd = "sudo %s" % cmd
     if output.running:
@@ -356,11 +357,12 @@ def push():
     rsync(var_directory,
           os.path.join(var_directory, "*"),
           reverse=True, delete=False,
-          exclude=('blobstorage*', '*.fs','*.old','*.zip', '*.log', '*.backup'),
+          exclude=('blobstorage*', '*.fs', '*.old', '*.zip', '*.log',
+                   '*.backup'),
           extra_opts='--ignore-existing')
 
     for folder in chown_directorys:
-        cmd = "chown %s -R %s" % (effective_user, folder)
+        cmd = "chown -R %s %s" % (effective_user, folder)
 
     if env.hostout.options.get('remote-sudo') == "true":
         sudo(cmd)
@@ -377,9 +379,9 @@ def push():
     # Chown
     if os.path.exists(etc_directory):
         if env.hostout.options.get('remote-sudo') == "true":
-            sudo("chown %s -R %s" % (effective_user, etc_directory))
+            sudo("chown -R %s %s" % (effective_user, etc_directory))
         else:
-            run("chown %s -R %s" % (effective_user, etc_directory))
+            run("chown -R %s %s" % (effective_user, etc_directory))
 
 
 def deploy_etc():
@@ -392,7 +394,7 @@ def deploy_etc():
 
     if os.path.isdir("%s/system/etc" % parts_directory):
         cmd = "cp -R %s /etc;supervisorctl reread;supervisorctl update" %\
-               (parts_directory + '/system/etc/*')
+            (parts_directory + '/system/etc/*')
 
         if env.hostout.options.get('remote-sudo') == "true":
             sudo(cmd)
