@@ -308,10 +308,17 @@ def cook_resources():
     """Cook plone resources on remote."""
     annotations = annotate()
     buildoutname = annotations['buildoutname']
+    if 'instance' in annotations:
+        instancescript = 'instance'
+    elif 'instance1' in annotations:
+        instancescript = 'instance1'
+    else:
+        raise Exception("Don't know the instance script name.")
+
     buildout_directory = env.hostout.options["path"]
 
-    sudo("%s/bin/instance -O %s run `which resourcecooker.py`" %
-         (buildout_directory, buildoutname))
+    sudo("%s/bin/%s -O %s run `which resourcecooker.py`" %
+         (buildout_directory, instancescript, buildoutname))
 
 
 def push():
