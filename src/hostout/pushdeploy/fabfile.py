@@ -304,6 +304,16 @@ def stage():
     # restart()
 
 
+def cook_resources():
+    """Cook plone resources on remote."""
+    annotations = annotate()
+    buildoutname = annotations['buildoutname']
+    buildout_directory = env.hostout.options["path"]
+
+    sudo("%s/bin/instance -O %s run `which resourcecooker.py`" %
+         (buildout_directory, buildoutname))
+
+
 def push():
     """Pushes the local buildout results (without data) to the remote site."""
 
