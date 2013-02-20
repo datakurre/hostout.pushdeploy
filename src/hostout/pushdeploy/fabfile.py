@@ -326,17 +326,14 @@ def cook_resources():
     """Cook plone resources on remote."""
     annotations = annotate()
     buildoutname = annotations['buildoutname']
-    if 'instance' in annotations:
-        instancescript = 'instance'
-    elif 'instance1' in annotations:
-        instancescript = 'instance1'
-    else:
-        raise Exception("Don't know the instance script name.")
 
     buildout_directory = env.hostout.options["path"]
 
-    sudo("%s/bin/%s -O %s run `which resourcecooker.py`" %
-         (buildout_directory, instancescript, buildoutname))
+    res = sudo("%s/bin/instance -O %s run `which resourcecooker.py`" %
+               (buildout_directory, buildoutname), warn_only=True)
+    if res.failed:
+        res = sudo("%s/bin/instance1 -O %s run `which resourcecooker.py`" %
+                   (buildout_directory, buildoutname), warn_only=True)
 
 
 def push():
@@ -435,6 +432,21 @@ def deploy_etc():
             sudo(cmd)
         else:
             run(cmd)
+
+
+def stop(site):
+    """Stop the remote site."""
+    sudo("supervisorctl stop %s:*" % site)
+
+
+def start(site):
+    """Start the remote site."""
+    sudo("supervisorctl start %s:*" % site)
+
+
+def site_restart(site):
+    """Restart the remote site."""
+    sudo("supervisorctl restart %s:*" % site)
 
 
 def deploy():
