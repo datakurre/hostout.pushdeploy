@@ -21,7 +21,10 @@ from fabric.operations import (
     local
 )
 
-from fabric.context_managers import lcd
+from fabric.context_managers import (
+    lcd,
+    settings
+)
 
 
 def rsync(from_path, to_path, reverse=False,
@@ -173,7 +176,22 @@ def bootstrap(*args):
                                      cmd)
         if output.running:
             print("[localhost] bootstrap: %s" % cmd)
-        local(cmd)
+
+        with settings(warn_only=True):
+            res = local(cmd)
+
+            if res.failed:
+                print("First bootstrap failed: we have a new bootstrap which "
+                      "has --distribute option now default. Trying again...")
+                cmd = "%s bootstrap.py" % (python)
+                if env.hostout.options.get('local-sudo') == "true":
+                    cmd = "sudo %s" % cmd
+                elif env.hostout.options.get('buildout-user'):
+                    cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
+                                             cmd)
+                if output.running:
+                    print("[localhost] bootstrap: %s" % cmd)
+                res = local(cmd)
 
 
 def annotate():
