@@ -168,7 +168,7 @@ def bootstrap(*args):
 
     # Bootstrap
     with lcd(env.hostout.options['path']):
-        cmd = "%s bootstrap.py%s" % (python, distribute)
+        cmd = "%s bootstrap.py%s %s" % (python, distribute, " ".join(args))
         if env.hostout.options.get('local-sudo') == "true":
             cmd = "sudo %s" % cmd
         elif env.hostout.options.get('buildout-user'):
@@ -183,7 +183,7 @@ def bootstrap(*args):
             if res.failed:
                 print("First bootstrap failed: we have a new bootstrap which "
                       "has --distribute option now default. Trying again...")
-                cmd = "%s bootstrap.py" % (python)
+                cmd = "%s bootstrap.py %s" % (python, " ".join(args))
                 if env.hostout.options.get('local-sudo') == "true":
                     cmd = "sudo %s" % cmd
                 elif env.hostout.options.get('buildout-user'):
