@@ -187,8 +187,8 @@ def bootstrap(*args):
                 if env.hostout.options.get('local-sudo') == "true":
                     cmd = "sudo %s" % cmd
                 elif env.hostout.options.get('buildout-user'):
-                    cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                             cmd)
+                    cmd = "su %s -c '%s'" % (env.hostout.options.get(
+                        'buildout-user'), cmd)
                 if output.running:
                     print("[localhost] bootstrap: %s" % cmd)
                 res = local(cmd)
@@ -199,7 +199,7 @@ def annotate():
 
     buildout = Buildout("%s/%s" % (env.hostout.options['path'],
                                    env.hostout.options['buildout']), [])
-    return buildout['buildout']
+    return buildout.get('buildout')
 
 
 def buildout(*args):
@@ -396,10 +396,10 @@ def push():
     for folder in chown_directorys:
         cmd = "chown -R %s %s" % (effective_user, folder)
 
-    if env.hostout.options.get('remote-sudo') == "true":
-        sudo(cmd)
-    else:
-        run(cmd)
+        if env.hostout.options.get('remote-sudo') == "true":
+            sudo(cmd)
+        else:
+            run(cmd)
 
     # Push "etc" (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, "etc")
