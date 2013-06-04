@@ -74,7 +74,7 @@ def rsync(from_path, to_path, reverse=False,
         'extra': extra_opts
     }
 
-    options = ("%(delete)s%(exclude)s --progress -pthlrz "
+    options = ("%(delete)s%(exclude)s -pthlrz "
                "%(extra)s %(rsh)s") % options_map
 
     # Interpret direction and define command
@@ -163,8 +163,7 @@ def bootstrap(*args):
     python = env.hostout.options.get('bootstrap-python', buildout_python)
 
     # Configure
-    distribute = not "--easy-install" in args
-    distribute = distribute and " --distribute" or ""
+    distribute = "--distribute" in args and "--distribute" or ""
 
     # Bootstrap
     with lcd(env.hostout.options['path']):
@@ -183,7 +182,7 @@ def bootstrap(*args):
             if res.failed:
                 print("First bootstrap failed: we have a new bootstrap which "
                       "has --distribute option now default. Trying again...")
-                cmd = "%s bootstrap.py %s" % (python, " ".join(args))
+                cmd = "%s bootstrap.py --distribute %s" % (python, " ".join(args))
                 if env.hostout.options.get('local-sudo') == "true":
                     cmd = "sudo %s" % cmd
                 elif env.hostout.options.get('buildout-user'):
@@ -234,15 +233,16 @@ def buildout(*args):
     parts_directory = os.path.join(buildout_directory,
                                    annotations['parts-directory'])
 
-    cmd = "chown -R %(user)s %(bin)s %(parts)s %(eggs)s" %\
-        {'user': effective_user, 'bin': bin_directory,
-         'parts': parts_directory, 'eggs': eggs_directory}
+    chown_directorys = [bin_directory, parts_directory, eggs_directory]
 
-    if env.hostout.options.get('local-sudo') == "true":
-        cmd = "sudo %s" % cmd
-    if output.running:
-        print("[localhost] buildout: %s" % cmd)
-    local(cmd)
+    for folder in chown_directorys:
+        cmd = "chown -R %s %s" % (effective_user, folder)
+
+        if env.hostout.options.get('local-sudo') == "true":
+            cmd = "sudo %s" % cmd
+        if output.running:
+            print("[localhost] buildout: %s" % cmd)
+        local(cmd)
 
     # Chown "etc" (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, "etc")
@@ -303,7 +303,7 @@ def restart():
     local(cmd)
 
 
-def stage():
+def stage(*args):
     """Updates the local staged buildout"""
 
     # Pull
@@ -313,7 +313,7 @@ def stage():
     update()
 
     # Bootstrap
-    bootstrap()
+    bootstrap(*args)
 
     # Buildout
     buildout()
