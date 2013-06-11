@@ -192,64 +192,43 @@ def bootstrap():
 
 
 def annotate():
-    """Read buildout configuration and returns 'buildout' section as a dict."""
+    """Read buildout configuration and returns 'buildout' section as a dict.
+    """
 
-    buildout = Buildout("%s/%s" % (env.hostout.options['path'],
-                                   env.hostout.options['buildout']), [])
+    hostout_path = env.hostout.options.get('path')
+
+    assert hostout_path, u'No path found for the selected hostout'
+
+    buildout = Buildout(
+        '{0:s}/{1:s}'.format(hostout_path, env.hostout.options['buildout']), []
+    )
     return buildout.get('buildout')
 
 
 def buildout(*args):
-    """Executes the local buildout and chowns it for the effective user."""
+    """Execute the local buildout
+    """
 
-    buildout_directory = env.hostout.options['path']
-    effective_user = env.hostout.options.get('effective-user', "root")
+    hostout_path = env.hostout.options.get('path')
+    fallback_user = env.user or 'root'
+    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = env.hostout.options.get('local-sudo') == "true"
+
+    assert hostout_path, u'No path found for the selected hostout'
 
     # Configure
-    offline = "-o" in args and " -o" or ""
-    parts = filter(lambda x: not x.startswith("-"), args)
-    parts = parts and " install %s" % " ".join(parts) or ""
+    offline = '-o' in args and ' -o' or ''
+    parts = [arg for arg in args if not arg.startswith('-')]
+    parts = parts and ' install {0:s}'.format(' '.join(parts)) or ''
 
     # Buildout
-    with lcd(buildout_directory):
-        cmd = "bin/buildout%s%s" % (parts, offline)
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        elif env.hostout.options.get('buildout-user'):
-            cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                     cmd)
+    with lcd(hostout_path):
+        cmd = 'bin/buildout{0:s}{1:s}'.format(parts, offline)
+        cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+        if local_sudo:
+            cmd = 'sudo {0:s}'.format(cmd)
         if output.running:
-            print("[localhost] buildout: %s" % cmd)
-        local(cmd)
-
-    # Chown
-    annotations = annotate()
-    bin_directory = os.path.join(buildout_directory,
-                                 annotations['bin-directory'])
-    eggs_directory = os.path.join(buildout_directory,
-                                  annotations['eggs-directory'])
-    parts_directory = os.path.join(buildout_directory,
-                                   annotations['parts-directory'])
-
-    chown_directorys = [bin_directory, parts_directory, eggs_directory]
-
-    for folder in chown_directorys:
-        cmd = "chown -R %s %s" % (effective_user, folder)
-
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        if output.running:
-            print("[localhost] buildout: %s" % cmd)
-        local(cmd)
-
-    # Chown "etc" (created by some buildout scripts)
-    etc_directory = os.path.join(buildout_directory, "etc")
-    if os.path.exists(etc_directory):
-        cmd = "chown -R %s %s" % (effective_user, etc_directory)
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        if output.running:
-            print("[localhost] buildout: %s" % cmd)
+            print('[localhost] buildout: {0:s}'.format(cmd))
         local(cmd)
 
 
