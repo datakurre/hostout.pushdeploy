@@ -93,18 +93,19 @@ def rsync(from_path, to_path, reverse=False,
 
 
 def clone(repository, branch=None):
-    """Clones a new local buildout from a mercurial repository.
+    """Clone a new local buildout from a mercurial repository.
     """
 
-    path = env.hostout.options.get('path')
+    hostout_path = env.hostout.options.get('path')
     fallback_user = env.user or 'root'
     buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') or False
+    local_sudo = env.hostout.options.get('local-sudo') == "true"
 
-    assert path, u'No path found for the selected hostout'
+    assert hostout_path, u'No path found for the selected hostout'
 
+    # Clone
     branch = branch and ' -r {0:s}'.format(branch) or ''
-    cmd = 'hg clone {0:s}{1:s} {2:s}'.format(repository, branch, path)
+    cmd = 'hg clone {0:s}{1:s} {2:s}'.format(repository, branch, hostout_path)
     cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
@@ -114,31 +115,35 @@ def clone(repository, branch=None):
 
 
 def update(branch=None):
-    """Updates the local buildout from its mercurial repository."""
+    """Update the local buildout from its mercurial repository.
+    """
+
+    hostout_path = env.hostout.options.get('path')
+    fallback_user = env.user or 'root'
+    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = env.hostout.options.get('local-sudo') == "true"
+
+    assert hostout_path, u'No path found for the selected hostout'
 
     # Pull
-    with lcd(env.hostout.options['path']):
-        cmd = "hg pull"
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        elif env.hostout.options.get('buildout-user'):
-            cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                     cmd)
+    with lcd(hostout_path):
+        cmd = 'hg pull'
+        cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+        if local_sudo:
+            cmd = 'sudo {0:s}'.format(cmd)
         if output.running:
-            print("[localhost] update: %s" % cmd)
+            print('[localhost] update: {0:s}'.format(cmd))
         local(cmd)
 
     # Update
-    branch = branch and " %s" % branch or ""
-    with lcd(env.hostout.options['path']):
-        cmd = "hg update -C%s" % branch
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        elif env.hostout.options.get('buildout-user'):
-            cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                     cmd)
+    branch = bool(branch) and ' {0:s}'.format(branch) or ''
+    with lcd(hostout_path):
+        cmd = 'hg update -C{0:s}'.format(branch)
+        cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+        if env.hostout.options.get('local-sudo') == 'true':
+            cmd = 'sudo {0:s}'.format(cmd)
         if output.running:
-            print("[localhost] update: %s" % cmd)
+            print('[localhost] update: {0:s}'.format(cmd))
         local(cmd)
 
 
