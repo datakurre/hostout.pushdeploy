@@ -212,6 +212,7 @@ def buildout(*args):
     hostout_path = env.hostout.options.get('path')
     fallback_user = env.user or 'root'
     buildout_user = env.hostout.options.get('buildout-user', fallback_user)
+    effective_user = env.hostout.options.get('effective-user', fallback_user)
     local_sudo = env.hostout.options.get('local-sudo') == "true"
 
     assert hostout_path, u'No path found for the selected hostout'
@@ -230,6 +231,15 @@ def buildout(*args):
         if output.running:
             print('[localhost] buildout: {0:s}'.format(cmd))
         local(cmd)
+
+    # Chown var-directory
+    var_directory = os.path.join(hostout_path, 'var')
+    cmd = 'chown -R {0:s} {1:s}'.format(effective_user, var_directory)
+    if local_sudo:
+        cmd = 'sudo {0:s}'.format(cmd)
+    if output.running:
+        print('[localhost] pull: {0:s}'.format(cmd))
+    local(cmd)
 
 
 def pull():
