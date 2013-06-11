@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
-"""Fabfile for hostout.pushdeploy to describe all the magic."""
+# -*- coding: utf-8 -*
+"""Fabfile for hostout.pushdeploy to describe all the magic
+"""
 
 import os
 
@@ -8,23 +9,23 @@ from zc.buildout.buildout import Buildout
 from fabric.state import (
     env,
     output
-    )
+)
 
 from fabric.network import (
     normalize,
     key_filenames
-    )
+)
 
 from fabric.operations import (
     run,
     sudo,
     local
-    )
+)
 
 from fabric.context_managers import (
     lcd,
     settings
-    )
+)
 
 
 def rsync(from_path, to_path, reverse=False,
@@ -147,46 +148,47 @@ def update(branch=None):
         local(cmd)
 
 
-def bootstrap(*args):
-    """Executes bootstrap for the local buildout.
+def bootstrap():
+    """Execute bootstrap for the local buildout.
 
     The default effective python could be overridden by setting
-    ``bootstrap-python`` hostout-option with a path to an another python
-    executable."""
+    ``bootstrap-python`` -hostout-option with a path to an another python
+    executable.
+
+    """
+    hostout_path = env.hostout.options.get('path')
+    fallback_user = env.user or 'root'
+    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = env.hostout.options.get('local-sudo') == "true"
+
+    assert hostout_path, u'No path found for the selected hostout'
 
     buildout_python = env.hostout.options.get('executable')
-    python = env.hostout.options.get('bootstrap-python', buildout_python)
-
-    # Configure
-    distribute = "--distribute" in args and "--distribute" or ""
+    bootstrap_python = (
+        env.hostout.options.get('bootstrap-python') or buildout_python
+    )
 
     # Bootstrap
-    with lcd(env.hostout.options['path']):
-        cmd = "%s bootstrap.py%s %s" % (python, distribute, " ".join(args))
-        if env.hostout.options.get('local-sudo') == "true":
-            cmd = "sudo %s" % cmd
-        elif env.hostout.options.get('buildout-user'):
-            cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                     cmd)
+    with lcd(hostout_path):
+        cmd = '{0:s} bootstrap.py --distribute'.format(bootstrap_python)
+        cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+        if local_sudo:
+            cmd = 'sudo {0:s}'.format(cmd)
         if output.running:
-            print("[localhost] bootstrap: %s" % cmd)
+            print('[localhost] bootstrap: %s' % cmd)
 
         with settings(warn_only=True):
             res = local(cmd)
-
             if res.failed:
-                print("First bootstrap failed: we have a new bootstrap which "
-                      "has --distribute option now default. Trying again...")
-                cmd = "%s bootstrap.py --distribute %s" % (
-                    python, " ".join(args))
-                if env.hostout.options.get('local-sudo') == "true":
-                    cmd = "sudo %s" % cmd
-                elif env.hostout.options.get('buildout-user'):
-                    cmd = "su %s -c '%s'" % (env.hostout.options.get(
-                        'buildout-user'), cmd)
+                print('First bootstrap failed: we have a new bootstrap which '
+                      'has --distribute option now default. Trying again...')
+                cmd = '{0:s} bootstrap.py'.format(bootstrap_python)
+                cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+                if local_sudo:
+                    cmd = 'sudo {0:s}'.format(cmd)
                 if output.running:
-                    print("[localhost] bootstrap: %s" % cmd)
-                res = local(cmd)
+                    print('[localhost] bootstrap: %s' % cmd)
+                local(cmd)
 
 
 def annotate():
@@ -299,7 +301,7 @@ def restart():
     local(cmd)
 
 
-def stage(*args):
+def stage():
     """Updates the local staged buildout"""
 
     # Pull
@@ -309,7 +311,7 @@ def stage(*args):
     update()
 
     # Bootstrap
-    bootstrap(*args)
+    bootstrap()
 
     # Buildout
     buildout()
