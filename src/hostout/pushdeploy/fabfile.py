@@ -8,23 +8,23 @@ from zc.buildout.buildout import Buildout
 from fabric.state import (
     env,
     output
-)
+    )
 
 from fabric.network import (
     normalize,
     key_filenames
-)
+    )
 
 from fabric.operations import (
     run,
     sudo,
     local
-)
+    )
 
 from fabric.context_managers import (
     lcd,
     settings
-)
+    )
 
 
 def rsync(from_path, to_path, reverse=False,
@@ -93,33 +93,23 @@ def rsync(from_path, to_path, reverse=False,
 
 
 def clone(repository, branch=None):
-    """Clones a new local buildout from a mercurial repository."""
+    """Clones a new local buildout from a mercurial repository.
+    """
 
-    path = env.hostout.options['path']
-    effective_user = env.hostout.options.get('effective-user',
-                                             env.user or 'root')
+    path = env.hostout.options.get('path')
+    fallback_user = env.user or 'root'
+    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = env.hostout.options.get('local-sudo') or False
 
-    # Clone
-    branch = branch and " -r %s" % branch or ""
-    cmd = "hg clone %s%s %s" % (repository, branch, path)
-    if env.hostout.options.get('local-sudo') == "true":
-        cmd = "sudo %s" % cmd
-    elif env.hostout.options.get('buildout-user'):
-        cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                 cmd)
+    assert path, u'No path found for the selected hostout'
+
+    branch = branch and ' -r {0:s}'.format(branch) or ''
+    cmd = 'hg clone {0:s}{1:s} {2:s}'.format(repository, branch, path)
+    cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
+    if local_sudo:
+        cmd = 'sudo {0:s}'.format(cmd)
     if output.running:
-        print("[localhost] clone: %s" % cmd)
-    local(cmd)
-
-    # Chown
-    cmd = "chown %s %s" % (effective_user, path)
-    if env.hostout.options.get('local-sudo') == "true":
-        cmd = "sudo %s" % cmd
-    elif env.hostout.options.get('buildout-user'):
-        cmd = "su %s -c '%s'" % (env.hostout.options.get('buildout-user'),
-                                 cmd)
-    if output.running:
-        print("[localhost] clone: %s" % cmd)
+        print('[localhost] clone: {0:s}'.format(cmd))
     local(cmd)
 
 
@@ -182,7 +172,8 @@ def bootstrap(*args):
             if res.failed:
                 print("First bootstrap failed: we have a new bootstrap which "
                       "has --distribute option now default. Trying again...")
-                cmd = "%s bootstrap.py --distribute %s" % (python, " ".join(args))
+                cmd = "%s bootstrap.py --distribute %s" % (
+                    python, " ".join(args))
                 if env.hostout.options.get('local-sudo') == "true":
                     cmd = "sudo %s" % cmd
                 elif env.hostout.options.get('buildout-user'):
@@ -425,8 +416,8 @@ def deploy_etc():
                                    annotations['parts-directory'])
 
     if os.path.isdir("%s/system/etc" % parts_directory):
-        cmd = "cp -R %s /etc;supervisorctl reread;supervisorctl update" %\
-            (parts_directory + '/system/etc/*')
+        cmd = "cp -R %s /etc;supervisorctl reread;supervisorctl update" % \
+              (parts_directory + '/system/etc/*')
 
         if env.hostout.options.get('remote-sudo') == "true":
             sudo(cmd)
@@ -473,9 +464,9 @@ def stage_supervisor():
     annotations = annotate()
     parts_directory = annotations['parts-directory']
 
-    cmd = "cp %s %s"\
-        % (os.path.join(parts_directory, os.path.basename(supervisor_conf)),
-           supervisor_conf)
+    cmd = "cp %s %s" \
+          % (os.path.join(parts_directory, os.path.basename(supervisor_conf)),
+             supervisor_conf)
     if env.hostout.options.get('local-sudo') == "true":
         cmd = "sudo %s" % cmd
     if output.running:
