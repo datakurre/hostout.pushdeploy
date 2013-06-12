@@ -27,9 +27,9 @@ from fabric.context_managers import (
 )
 
 
-def rsync(from_path, to_path, reverse=False,
-          exclude=(), delete=False, extra_opts="",
-          ssh_opts="", capture=False):
+def _rsync(from_path, to_path, reverse=False,
+           exclude=(), delete=False, extra_opts="",
+           ssh_opts="", capture=False):
     """Perform rsync from some remote location to some local location.
     Optionally does exactly the reverse (syncs from some local location
     to some remote location)
@@ -106,7 +106,8 @@ def clone(repository, branch=None):
 
     # Clone
     branch = branch and ' -r {0:s}'.format(branch) or ''
-    cmd = 'hg clone {0:s}{1:s} {2:s}'.format(repository, branch, buildout_directory)
+    cmd = 'hg clone {0:s}{1:s} {2:s}'.format(repository, branch,
+                                             buildout_directory)
     cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
@@ -200,7 +201,8 @@ def annotate():
     assert buildout_directory, u'No path found for the selected hostout'
 
     buildout = zc.buildout.buildout.Buildout(
-        '{0:s}/{1:s}'.format(buildout_directory, _env.hostout.options['buildout']), []
+        '{0:s}/{1:s}'.format(buildout_directory,
+                             _env.hostout.options['buildout']), []
     )
     return buildout.get('buildout')
 
@@ -276,13 +278,13 @@ def pull():
     _local(cmd)
 
     # Pull filestorage
-    rsync(os.path.join(filestorage_directory, 'Data.fs'),
-          os.path.join(filestorage_directory, 'Data.fs'),
-          delete=True)
+    _rsync(os.path.join(filestorage_directory, 'Data.fs'),
+           os.path.join(filestorage_directory, 'Data.fs'),
+           delete=True)
 
     # Pull blobstorage
-    rsync(os.path.join(var_directory, 'blobstorage'), var_directory,
-          delete=True)
+    _rsync(os.path.join(var_directory, 'blobstorage'), var_directory,
+           delete=True)
 
     # Chown var-directory
     var_directory = os.path.join(buildout_directory, 'var')
@@ -388,8 +390,8 @@ def push():
     var_directory = buildout_sub_directory('var')
 
     for directory in [bin_directory, eggs_directory, parts_directory]:
-        rsync(directory, os.path.join(directory, '*'),
-              reverse=True, delete=False)
+        _rsync(directory, os.path.join(directory, '*'),
+               reverse=True, delete=False)
         # Chown
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, directory)
         if remote_sudo:
@@ -398,8 +400,8 @@ def push():
             _run(cmd)
 
     if os.path.isdir(products_directory):
-        rsync(products_directory, os.path.join(products_directory, '*'),
-              reverse=True, delete=False)
+        _rsync(products_directory, os.path.join(products_directory, '*'),
+               reverse=True, delete=False)
         # Chown
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, products_directory)
         if remote_sudo:
@@ -407,11 +409,11 @@ def push():
         else:
             _run(cmd)
 
-    rsync(var_directory, os.path.join(var_directory, '*'),
-          reverse=True, delete=False,
-          exclude=('blobstorage*', '*.fs', '*.old', '*.zip', '*.log',
-                   '*.backup'),
-          extra_opts='--ignore-existing')
+    _rsync(var_directory, os.path.join(var_directory, '*'),
+           reverse=True, delete=False,
+           exclude=('blobstorage*', '*.fs', '*.old', '*.zip', '*.log',
+                    '*.backup'),
+           extra_opts='--ignore-existing')
     # Chown
     cmd = 'chown -R {0:s} {2:s}'.format(effective_user, var_directory)
     if remote_sudo:
@@ -422,8 +424,8 @@ def push():
     # Push 'etc' (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, 'etc')
     if os.path.exists(etc_directory):
-        rsync(etc_directory, os.path.join(etc_directory, '*'),
-              reverse=True, delete=False)
+        _rsync(etc_directory, os.path.join(etc_directory, '*'),
+               reverse=True, delete=False)
     # Chown
     if os.path.exists(etc_directory):
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, etc_directory)
@@ -540,9 +542,9 @@ def deploy_supervisor():
     annotations = annotate()
     parts_directory = annotations.get('parts-directory')
 
-    rsync(supervisor_conf, os.path.join(parts_directory,
-                                        os.path.basename(supervisor_conf)),
-          reverse=True, delete=False)
+    _rsync(supervisor_conf, os.path.join(parts_directory,
+                                         os.path.basename(supervisor_conf)),
+           reverse=True, delete=False)
 
     # Update
     if _env.hostout.options.get('remote-sudo') == 'true':
