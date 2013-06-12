@@ -3,27 +3,26 @@
 """
 
 import os
-
-from zc.buildout.buildout import Buildout
+import zc.buildout.buildout
 
 from fabric.state import (
-    env,
-    output
+    env as _env,
+    output as _output
 )
 
 from fabric.network import (
-    normalize,
-    key_filenames
+    normalize as _normalize,
+    key_filenames as _key_filenames
 )
 
 from fabric.operations import (
-    run,
-    sudo,
-    local
+    run as _run,
+    sudo as _sudo,
+    local as _local
 )
 
 from fabric.context_managers import (
-    lcd,
+    lcd as _lcd,
     settings
 )
 
@@ -47,12 +46,12 @@ def rsync(from_path, to_path, reverse=False,
 
     # Honor SSH key(s)
     key_string = ''
-    keys = key_filenames()
+    keys = _key_filenames()
     if keys:
         key_string = '-i ' + ' -i '.join(keys)
 
     # Port
-    user, host, port = normalize(env.host_string)
+    user, host, port = _normalize(_env.host_string)
     if host.startswith('@'):
         host = host[1:]
     port_string = '-p {0:s}'.format(port)
@@ -64,7 +63,7 @@ def rsync(from_path, to_path, reverse=False,
         rsh_string = '--rsh="ssh {0:s}"'.format(' '.join(rsh_parts))
 
     # Set remote sudo
-    if env.hostout.options.get('remote-sudo') == 'true':
+    if _env.hostout.options.get('remote-sudo') == 'true':
         remote_sudo = ' --rsync-path="sudo rsync"'
         extra_opts = (extra_opts + remote_sudo).strip()
 
@@ -87,21 +86,21 @@ def rsync(from_path, to_path, reverse=False,
         cmd = 'rsync {0:s} {1:s} {2:s}@{3:s}:{4:s}'.format(
             options, to_path, user, host, from_path)
 
-    if env.hostout.options.get('local-sudo') == 'true':
+    if _env.hostout.options.get('local-sudo') == 'true':
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] rsync: {0:s}'.format(cmd))
-    return local(cmd, capture=capture)
+    return _local(cmd, capture=capture)
 
 
 def clone(repository, branch=None):
     """Clone a new local buildout from a mercurial repository.
     """
 
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
@@ -111,42 +110,42 @@ def clone(repository, branch=None):
     cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] clone: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
 
 def update(branch=None):
     """Update the local buildout from its mercurial repository.
     """
 
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
     # Pull
-    with lcd(buildout_directory):
+    with _lcd(buildout_directory):
         cmd = 'hg pull'
         cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
         if local_sudo:
             cmd = 'sudo {0:s}'.format(cmd)
-        if output.running:
+        if _output.running:
             print('[localhost] update: {0:s}'.format(cmd))
-        local(cmd)
+        _local(cmd)
 
     # Update
     branch = bool(branch) and ' {0:s}'.format(branch) or ''
-    with lcd(buildout_directory):
+    with _lcd(buildout_directory):
         cmd = 'hg update -C{0:s}'.format(branch)
         cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
-        if env.hostout.options.get('local-sudo') == 'true':
+        if _env.hostout.options.get('local-sudo') == 'true':
             cmd = 'sudo {0:s}'.format(cmd)
-        if output.running:
+        if _output.running:
             print('[localhost] update: {0:s}'.format(cmd))
-        local(cmd)
+        _local(cmd)
 
 
 def bootstrap():
@@ -157,29 +156,29 @@ def bootstrap():
     executable.
 
     """
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
-    buildout_python = env.hostout.options.get('executable')
+    buildout_python = _env.hostout.options.get('executable')
     bootstrap_python = (
-        env.hostout.options.get('bootstrap-python') or buildout_python
+        _env.hostout.options.get('bootstrap-python') or buildout_python
     )
 
     # Bootstrap
-    with lcd(buildout_directory):
+    with _lcd(buildout_directory):
         cmd = '{0:s} bootstrap.py --distribute'.format(bootstrap_python)
         cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
         if local_sudo:
             cmd = 'sudo {0:s}'.format(cmd)
-        if output.running:
+        if _output.running:
             print('[localhost] bootstrap: %s' % cmd)
 
         with settings(warn_only=True):
-            res = local(cmd)
+            res = _local(cmd)
             if res.failed:
                 print('First bootstrap failed: we have a new bootstrap which '
                       'has --distribute option now default. Trying again...')
@@ -187,21 +186,21 @@ def bootstrap():
                 cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
                 if local_sudo:
                     cmd = 'sudo {0:s}'.format(cmd)
-                if output.running:
+                if _output.running:
                     print('[localhost] bootstrap: %s' % cmd)
-                local(cmd)
+                _local(cmd)
 
 
 def annotate():
     """Read buildout configuration and returns 'buildout' section as a dict.
     """
 
-    buildout_directory = env.hostout.options.get('path')
+    buildout_directory = _env.hostout.options.get('path')
 
     assert buildout_directory, u'No path found for the selected hostout'
 
-    buildout = Buildout(
-        '{0:s}/{1:s}'.format(buildout_directory, env.hostout.options['buildout']), []
+    buildout = zc.buildout.buildout.Buildout(
+        '{0:s}/{1:s}'.format(buildout_directory, _env.hostout.options['buildout']), []
     )
     return buildout.get('buildout')
 
@@ -210,11 +209,11 @@ def buildout(*args):
     """Execute the local buildout
     """
 
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    effective_user = env.hostout.options.get('effective-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
+    effective_user = _env.hostout.options.get('effective-user', fallback_user)
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
@@ -224,34 +223,34 @@ def buildout(*args):
     parts = parts and ' install {0:s}'.format(' '.join(parts)) or ''
 
     # Buildout
-    with lcd(buildout_directory):
+    with _lcd(buildout_directory):
         cmd = 'bin/buildout{0:s}{1:s}'.format(parts, offline)
         cmd = 'su {0:s} -c "{1:s}"'.format(buildout_user, cmd)
         if local_sudo:
             cmd = 'sudo {0:s}'.format(cmd)
-        if output.running:
+        if _output.running:
             print('[localhost] buildout: {0:s}'.format(cmd))
-        local(cmd)
+        _local(cmd)
 
     # Chown var-directory
     var_directory = os.path.join(buildout_directory, 'var')
     cmd = 'chown -R {0:s} {1:s}'.format(effective_user, var_directory)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] pull: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
 
 def pull():
     """Pull the data from the remote site into the local buildout.
     """
 
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    buildout_user = env.hostout.options.get('buildout-user', fallback_user)
-    effective_user = env.hostout.options.get('effective-user', fallback_user)
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
+    effective_user = _env.hostout.options.get('effective-user', fallback_user)
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
@@ -263,18 +262,18 @@ def pull():
         cmd = 'mkdir -p {0:s}'.format(filestorage_directory)
         if local_sudo:
             cmd = 'sudo {0:s}'.format(cmd)
-        if output.running:
+        if _output.running:
             print('[localhost] pull: {0:s}'.format(cmd))
-        local(cmd)
+        _local(cmd)
 
     # Chown var-directory
     var_directory = os.path.join(buildout_directory, 'var')
     cmd = 'chown -R {0:s} {1:s}'.format(buildout_user, var_directory)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] pull: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
     # Pull filestorage
     rsync(os.path.join(filestorage_directory, 'Data.fs'),
@@ -290,9 +289,9 @@ def pull():
     cmd = 'chown -R {0:s} {1:s}'.format(effective_user, var_directory)
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] pull: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
 
 def restart():
@@ -300,18 +299,18 @@ def restart():
     by setting a hostout-option ``restart``
 
     """
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     # Restart
-    cmd = env.hostout.options.get('restart')
+    cmd = _env.hostout.options.get('restart')
 
     assert cmd, u'No restart command found for the selected hostout'
 
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] restart: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
 
 def stage():
@@ -331,7 +330,7 @@ def stage():
     buildout()
 
     # Restart
-    if env.hostout.options.get('local-restart') == "true":
+    if _env.hostout.options.get('local-restart') == "true":
         restart()
 
 
@@ -339,7 +338,7 @@ def cook_resources():
     """Cook plone resources on remote
     """
 
-    buildout_directory = env.hostout.options.get('path')
+    buildout_directory = _env.hostout.options.get('path')
 
     assert buildout_directory, u'No path found for the selected hostout'
 
@@ -349,10 +348,10 @@ def cook_resources():
     cmd = '{0:s}/bin/instance -O {1:s} run `which resourcecooker.py`'.format(
         buildout_directory, buildout_name
     )
-    res = sudo(cmd, warn_only=True)
+    res = _sudo(cmd, warn_only=True)
     if res.failed:
         cmd = cmd.replace('/bin/instance -O', '/bin/instance1 -O')
-        sudo(cmd, warn_only=True)
+        _sudo(cmd, warn_only=True)
 
 
 def push():
@@ -362,20 +361,20 @@ def push():
     # TODO: Currently all remote directories are chown for effective-user.
     # We should remote this for everything else except var-directory
 
-    buildout_directory = env.hostout.options.get('path')
-    fallback_user = env.user or 'root'
-    effective_user = env.hostout.options.get('effective-user', fallback_user)
-    remote_sudo = env.hostout.options.get('remote-sudo') == "true"
+    buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    effective_user = _env.hostout.options.get('effective-user', fallback_user)
+    remote_sudo = _env.hostout.options.get('remote-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
 
     # Make sure that the buildout directory exists on the remote
     if remote_sudo:
-        sudo('mkdir -p {0:s}'.format(buildout_directory))
-        sudo('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
+        _sudo('mkdir -p {0:s}'.format(buildout_directory))
+        _sudo('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
     else:
-        run('mkdir -p {0:s}'.format(buildout_directory))
-        run('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
+        _run('mkdir -p {0:s}'.format(buildout_directory))
+        _run('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
 
     # Push
     annotations = annotate()
@@ -394,9 +393,9 @@ def push():
         # Chown
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, directory)
         if remote_sudo:
-            sudo(cmd)
+            _sudo(cmd)
         else:
-            run(cmd)
+            _run(cmd)
 
     if os.path.isdir(products_directory):
         rsync(products_directory, os.path.join(products_directory, '*'),
@@ -404,9 +403,9 @@ def push():
         # Chown
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, products_directory)
         if remote_sudo:
-            sudo(cmd)
+            _sudo(cmd)
         else:
-            run(cmd)
+            _run(cmd)
 
     rsync(var_directory, os.path.join(var_directory, '*'),
           reverse=True, delete=False,
@@ -416,9 +415,9 @@ def push():
     # Chown
     cmd = 'chown -R {0:s} {2:s}'.format(effective_user, var_directory)
     if remote_sudo:
-        sudo(cmd)
+        _sudo(cmd)
     else:
-        run(cmd)
+        _run(cmd)
 
     # Push 'etc' (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, 'etc')
@@ -429,16 +428,16 @@ def push():
     if os.path.exists(etc_directory):
         cmd = 'chown -R {0:s} {2:s}'.format(effective_user, etc_directory)
         if remote_sudo:
-            sudo(cmd)
+            _sudo(cmd)
         else:
-            run(cmd)
+            _run(cmd)
 
 
 def deploy_etc():
     """Copy system config from parts/system/etc to /etc
     """
 
-    buildout_directory = env.hostout.options['path']
+    buildout_directory = _env.hostout.options['path']
 
     annotations = annotate()
 
@@ -449,28 +448,28 @@ def deploy_etc():
         cmd = 'cp -R %s /etc;supervisorctl reread;supervisorctl update' % \
               (parts_directory + '/system/etc/*')
 
-        if env.hostout.options.get('remote-sudo') == 'true':
-            sudo(cmd)
+        if _env.hostout.options.get('remote-sudo') == 'true':
+            _sudo(cmd)
         else:
-            run(cmd)
+            _run(cmd)
 
 
 def stop(site):
     """Stop the remote site
     """
-    sudo('supervisorctl stop {0:s}:*'.format(site))
+    _sudo('supervisorctl stop {0:s}:*'.format(site))
 
 
 def start(site):
     """Start the remote site
     """
-    sudo('supervisorctl start %s:*' % site)
+    _sudo('supervisorctl start %s:*' % site)
 
 
 def site_restart(site):
     """Restart the remote site
     """
-    sudo('supervisorctl restart %s:*' % site)
+    _sudo('supervisorctl restart %s:*' % site)
 
 
 def deploy():
@@ -482,14 +481,14 @@ def deploy():
     deploy_etc()
 
     # Restart
-    cmd = env.hostout.options.get('restart')
+    cmd = _env.hostout.options.get('restart')
 
     assert cmd, u'No restart command found for the selected hostout'
 
-    if env.hostout.options.get('remote-sudo') == 'true':
-        sudo(cmd)
+    if _env.hostout.options.get('remote-sudo') == 'true':
+        _sudo(cmd)
     else:
-        run(cmd)
+        _run(cmd)
 
 
 def stage_supervisor():
@@ -497,12 +496,12 @@ def stage_supervisor():
     path must be defined by setting a hostout-option ``supervisor-conf``.
 
     """
-    supervisor_conf = env.hostout.options.get('supervisor-conf')
+    supervisor_conf = _env.hostout.options.get('supervisor-conf')
 
     assert supervisor_conf, \
         u'No supervisor_conf found for the selected hostout'
 
-    local_sudo = env.hostout.options.get('local-sudo') == "true"
+    local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
     # Configure
     annotations = annotate()
@@ -514,17 +513,17 @@ def stage_supervisor():
     )
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] stage_supervisor: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
     # Update
     cmd = 'supervisorctl update'
     if local_sudo:
         cmd = 'sudo {0:s}'.format(cmd)
-    if output.running:
+    if _output.running:
         print('[localhost] stage_supervisor: {0:s}'.format(cmd))
-    local(cmd)
+    _local(cmd)
 
 
 def deploy_supervisor():
@@ -532,7 +531,7 @@ def deploy_supervisor():
     path must be defined by setting a hostout-option ``supervisor-conf``.
 
     """
-    supervisor_conf = env.hostout.options.get('supervisor-conf')
+    supervisor_conf = _env.hostout.options.get('supervisor-conf')
 
     assert supervisor_conf,\
         u'No supervisor_conf found for the selected hostout'
@@ -546,7 +545,7 @@ def deploy_supervisor():
           reverse=True, delete=False)
 
     # Update
-    if env.hostout.options.get('remote-sudo') == 'true':
-        sudo('supervisorctl update')
+    if _env.hostout.options.get('remote-sudo') == 'true':
+        _sudo('supervisorctl update')
     else:
-        run('supervisorctl update')
+        _run('supervisorctl update')
