@@ -373,10 +373,10 @@ def push():
     # Make sure that the buildout directory exists on the remote
     if remote_sudo:
         _sudo('mkdir -p {0:s}'.format(buildout_directory))
-        _sudo('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
+        _sudo('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
     else:
         _run('mkdir -p {0:s}'.format(buildout_directory))
-        _run('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
+        _run('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
 
     # Push
     annotations = annotate()
@@ -393,7 +393,7 @@ def push():
         _rsync(directory, os.path.join(directory, '*'),
                reverse=True, delete=False)
         # Chown
-        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, directory)
+        cmd = 'chown -R {0:s} {1:s}'.format(effective_user, directory)
         if remote_sudo:
             _sudo(cmd)
         else:
@@ -403,7 +403,7 @@ def push():
         _rsync(products_directory, os.path.join(products_directory, '*'),
                reverse=True, delete=False)
         # Chown
-        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, products_directory)
+        cmd = 'chown -R {0:s} {1:s}'.format(effective_user, products_directory)
         if remote_sudo:
             _sudo(cmd)
         else:
@@ -415,7 +415,7 @@ def push():
                     '*.backup'),
            extra_opts='--ignore-existing')
     # Chown
-    cmd = 'chown -R {0:s} {2:s}'.format(effective_user, var_directory)
+    cmd = 'chown -R {0:s} {1:s}'.format(effective_user, var_directory)
     if remote_sudo:
         _sudo(cmd)
     else:
@@ -428,7 +428,7 @@ def push():
                reverse=True, delete=False)
     # Chown
     if os.path.exists(etc_directory):
-        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, etc_directory)
+        cmd = 'chown -R {0:s} {1:s}'.format(effective_user, etc_directory)
         if remote_sudo:
             _sudo(cmd)
         else:
