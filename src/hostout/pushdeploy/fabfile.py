@@ -197,14 +197,24 @@ def annotate():
     """
 
     buildout_directory = _env.hostout.options.get('path')
+    fallback_user = _env.user or 'root'
+    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
 
     assert buildout_directory, u'No path found for the selected hostout'
 
-    buildout = zc.buildout.buildout.Buildout(
-        '{0:s}/{1:s}'.format(buildout_directory,
-                             _env.hostout.options['buildout']), []
-    )
-    return buildout.get('buildout')
+    my_home = os.environ.get('HOME')
+    try:
+        os.environ['HOME'] = os.path.expanduser('~{0:s}'.format(buildout_user))
+        buildout = zc.buildout.buildout.Buildout(
+            '{0:s}/{1:s}'.format(buildout_directory,
+                                 _env.hostout.options['buildout']), []
+        )
+        return buildout.get('buildout')
+    finally:
+        if my_home is not None:
+            os.environ['HOME'] = my_home
+        else:
+            del os.environ['HOME']
 
 
 def buildout(*args):
@@ -380,6 +390,7 @@ def push():
 
     # Push
     annotations = annotate()
+
 
     buildout_sub_directory = lambda x: os.path.join(buildout_directory, x)
 
