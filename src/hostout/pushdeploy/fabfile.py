@@ -360,13 +360,11 @@ def push():
     """
 
     # TODO: Currently all remote directories are chown for effective-user.
-    # We should remote this for everything else except var-directory and
-    # only chown the directories for effective-group.
+    # We should remote this for everything else except var-directory
 
     buildout_directory = env.hostout.options.get('path')
     fallback_user = env.user or 'root'
     effective_user = env.hostout.options.get('effective-user', fallback_user)
-    effective_group = env.hostout.options.get('effective-group', '')
     remote_sudo = env.hostout.options.get('remote-sudo') == "true"
 
     assert buildout_directory, u'No path found for the selected hostout'
@@ -374,12 +372,10 @@ def push():
     # Make sure that the buildout directory exists on the remote
     if remote_sudo:
         sudo('mkdir -p {0:s}'.format(buildout_directory))
-        sudo('chown {0:s}:{1:s} {2:s}'.format(
-            effective_user, effective_group, buildout_directory))
+        sudo('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
     else:
         run('mkdir -p {0:s}'.format(buildout_directory))
-        run('chown {0:s}:{1:s} {2:s}'.format(
-            effective_user, effective_group, buildout_directory))
+        run('chown {0:s} {2:s}'.format(effective_user, buildout_directory))
 
     # Push
     annotations = annotate()
@@ -396,8 +392,7 @@ def push():
         rsync(directory, os.path.join(directory, '*'),
               reverse=True, delete=False)
         # Chown
-        cmd = 'chown -R {0:s}:{1:s} {2:s}'.format(
-            effective_user, effective_group, directory)
+        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, directory)
         if remote_sudo:
             sudo(cmd)
         else:
@@ -407,8 +402,7 @@ def push():
         rsync(products_directory, os.path.join(products_directory, '*'),
               reverse=True, delete=False)
         # Chown
-        cmd = 'chown -R {0:s}:{1:s} {2:s}'.format(
-            effective_user, effective_group, products_directory)
+        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, products_directory)
         if remote_sudo:
             sudo(cmd)
         else:
@@ -420,8 +414,7 @@ def push():
                    '*.backup'),
           extra_opts='--ignore-existing')
     # Chown
-    cmd = 'chown -R {0:s}:{1:s} {2:s}'.format(
-        effective_user, effective_group, var_directory)
+    cmd = 'chown -R {0:s} {2:s}'.format(effective_user, var_directory)
     if remote_sudo:
         sudo(cmd)
     else:
@@ -434,8 +427,7 @@ def push():
               reverse=True, delete=False)
     # Chown
     if os.path.exists(etc_directory):
-        cmd = 'chown -R {0:s}:{1:s} {2:s}'.format(
-            effective_user, effective_group, etc_directory)
+        cmd = 'chown -R {0:s} {2:s}'.format(effective_user, etc_directory)
         if remote_sudo:
             sudo(cmd)
         else:
