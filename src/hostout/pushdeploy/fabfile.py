@@ -373,10 +373,10 @@ def push():
     # Make sure that the buildout directory exists on the remote
     if remote_sudo:
         _sudo('mkdir -p {0:s}'.format(buildout_directory))
-        _sudo('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
+        _sudo('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
     else:
         _run('mkdir -p {0:s}'.format(buildout_directory))
-        _run('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
+        _run('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
 
     # Push
     annotations = annotate()
