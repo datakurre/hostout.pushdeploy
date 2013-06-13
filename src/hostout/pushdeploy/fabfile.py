@@ -234,6 +234,15 @@ def buildout(*args):
     parts = [arg for arg in args if not arg.startswith('-')]
     parts = parts and ' install {0:s}'.format(' '.join(parts)) or ''
 
+    # Chown var-directory
+    var_directory = os.path.join(buildout_directory, 'var')
+    cmd = 'chown -R {0:s} {1:s}'.format(buildout_user, var_directory)
+    if local_sudo:
+        cmd = 'sudo {0:s}'.format(cmd)
+    if _output.running:
+        print('[localhost] pull: {0:s}'.format(cmd))
+    _local(cmd)
+
     # Buildout
     with _lcd(buildout_directory):
         cmd = 'bin/buildout{0:s}{1:s}'.format(parts, offline)
@@ -260,7 +269,6 @@ def pull():
 
     buildout_directory = _env.hostout.options.get('path')
     fallback_user = _env.user or 'root'
-    buildout_user = _env.hostout.options.get('buildout-user', fallback_user)
     effective_user = _env.hostout.options.get('effective-user', fallback_user)
     local_sudo = _env.hostout.options.get('local-sudo') == "true"
 
@@ -277,15 +285,6 @@ def pull():
         if _output.running:
             print('[localhost] pull: {0:s}'.format(cmd))
         _local(cmd)
-
-    # Chown var-directory
-    var_directory = os.path.join(buildout_directory, 'var')
-    cmd = 'chown -R {0:s} {1:s}'.format(buildout_user, var_directory)
-    if local_sudo:
-        cmd = 'sudo {0:s}'.format(cmd)
-    if _output.running:
-        print('[localhost] pull: {0:s}'.format(cmd))
-    _local(cmd)
 
     # Pull filestorage
     _rsync(os.path.join(filestorage_directory, 'Data.fs'),
