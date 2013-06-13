@@ -306,25 +306,6 @@ def pull():
     _local(cmd)
 
 
-def restart():
-    """Restart the local buildout. The restart command must be defined
-    by setting a hostout-option ``restart``
-
-    """
-    local_sudo = _env.hostout.options.get('local-sudo') == "true"
-
-    # Restart
-    cmd = _env.hostout.options.get('restart')
-
-    assert cmd, u'No restart command found for the selected hostout'
-
-    if local_sudo:
-        cmd = 'sudo {0:s}'.format(cmd)
-    if _output.running:
-        print('[localhost] restart: {0:s}'.format(cmd))
-    _local(cmd)
-
-
 def stage():
     """Update the local staged buildout
     """
@@ -343,27 +324,17 @@ def stage():
 
     # Restart
     if _env.hostout.options.get('local-restart') == "true":
-        restart()
+        local_sudo = _env.hostout.options.get('local-sudo') == "true"
+        cmds = filter(bool, _env.hostout.options.get('restart').split('\n'))
 
+        assert cmds, u'No restart commands found for the selected hostout'
 
-def cook_resources():
-    """Cook plone resources on remote
-    """
-
-    buildout_directory = _env.hostout.options.get('path')
-
-    assert buildout_directory, u'No path found for the selected hostout'
-
-    annotations = annotate()
-    buildout_name = annotations['buildoutname']
-
-    cmd = '{0:s}/bin/instance -O {1:s} run `which resourcecooker.py`'.format(
-        buildout_directory, buildout_name
-    )
-    res = _sudo(cmd, warn_only=True)
-    if res.failed:
-        cmd = cmd.replace('/bin/instance -O', '/bin/instance1 -O')
-        _sudo(cmd, warn_only=True)
+        for cmd in cmds:
+            if local_sudo:
+                cmd = 'sudo {0:s}'.format(cmd)
+            if _output.running:
+                print('[localhost] restart: {0:s}'.format(cmd))
+            _local(cmd)
 
 
 def push():
@@ -376,7 +347,7 @@ def push():
     buildout_directory = _env.hostout.options.get('path')
     fallback_user = _env.user or 'root'
     effective_user = _env.hostout.options.get('effective-user', fallback_user)
-    remote_sudo = _env.hostout.options.get('remote-sudo') == "true"
+    remote_sudo = _env.hostout.options.get('remote-sudo') == 'true'
 
     assert buildout_directory, u'No path found for the selected hostout'
 
@@ -390,7 +361,6 @@ def push():
 
     # Push
     annotations = annotate()
-
 
     buildout_sub_directory = lambda x: os.path.join(buildout_directory, x)
 
@@ -467,24 +437,6 @@ def deploy_etc():
             _run(cmd)
 
 
-def stop(site):
-    """Stop the remote site
-    """
-    _sudo('supervisorctl stop {0:s}:*'.format(site))
-
-
-def start(site):
-    """Start the remote site
-    """
-    _sudo('supervisorctl start %s:*' % site)
-
-
-def site_restart(site):
-    """Restart the remote site
-    """
-    _sudo('supervisorctl restart %s:*' % site)
-
-
 def deploy():
     """Deploys the local buildout to the remote site
     """
@@ -494,14 +446,15 @@ def deploy():
     deploy_etc()
 
     # Restart
-    cmd = _env.hostout.options.get('restart')
+    cmds = filter(bool, _env.hostout.options.get('restart').split('\n'))
 
-    assert cmd, u'No restart command found for the selected hostout'
+    assert cmds, u'No restart commands found for the selected hostout'
 
-    if _env.hostout.options.get('remote-sudo') == 'true':
-        _sudo(cmd)
-    else:
-        _run(cmd)
+    for cmd in cmds:
+        if _env.hostout.options.get('remote-sudo') == 'true':
+            _sudo(cmd)
+        else:
+            _run(cmd)
 
 
 def stage_supervisor():
@@ -546,7 +499,7 @@ def deploy_supervisor():
     """
     supervisor_conf = _env.hostout.options.get('supervisor-conf')
 
-    assert supervisor_conf,\
+    assert supervisor_conf, \
         u'No supervisor_conf found for the selected hostout'
 
     # Sync
@@ -562,3 +515,53 @@ def deploy_supervisor():
         _sudo('supervisorctl update')
     else:
         _run('supervisorctl update')
+
+
+def cook_resources():
+    """Cook plone resources on remote
+    """
+
+    buildout_directory = _env.hostout.options.get('path')
+
+    assert buildout_directory, u'No path found for the selected hostout'
+
+    annotations = annotate()
+    buildout_name = annotations['buildoutname']
+
+    cmd = '{0:s}/bin/instance -O {1:s} run `which resourcecooker.py`'.format(
+        buildout_directory, buildout_name
+    )
+    res = _sudo(cmd, warn_only=True)
+    if res.failed:
+        cmd = cmd.replace('/bin/instance -O', '/bin/instance1 -O')
+        _sudo(cmd, warn_only=True)
+
+
+def stop():
+    """Stop the remote site using supervisor
+    """
+    site = _env.hostout.options.get('hostname')
+    if _env.hostout.options.get('remote-sudo') == 'true':
+        _sudo('supervisorctl stop {0:s}:*'.format(site))
+    else:
+        _run('supervisorctl stop {0:s}:*'.format(site))
+
+
+def start():
+    """Start the remote site using supervisor
+    """
+    site = _env.hostout.options.get('hostname')
+    if _env.hostout.options.get('remote-sudo') == 'true':
+        _sudo('supervisorctl start %s:*' % site)
+    else:
+        _run('supervisorctl start %s:*' % site)
+
+
+def restart():
+    """Restart the remote site using supervisor
+    """
+    site = _env.hostout.options.get('hostname')
+    if _env.hostout.options.get('remote-sudo') == 'true':
+        _sudo('supervisorctl restart %s:*' % site)
+    else:
+        _run('supervisorctl restart %s:*' % site)
