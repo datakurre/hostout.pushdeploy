@@ -23,7 +23,7 @@ from fabric.operations import (
 
 from fabric.context_managers import (
     lcd as _lcd,
-    settings
+    settings as _settings
 )
 
 
@@ -178,7 +178,7 @@ def bootstrap():
         if _output.running:
             print('[localhost] bootstrap: %s' % cmd)
 
-        with settings(warn_only=True):
+        with _settings(warn_only=True):
             res = _local(cmd)
             if res.failed:
                 print('First bootstrap failed: we have a new bootstrap which '
@@ -344,30 +344,33 @@ def push():
     # We should remote this for everything else except var-directory
 
     buildout_directory = _env.hostout.options.get('path')
+
     fallback_user = _env.user or 'root'
     effective_user = _env.hostout.options.get('effective-user', fallback_user)
     remote_sudo = _env.hostout.options.get('remote-sudo') == 'true'
 
     assert buildout_directory, u'No path found for the selected hostout'
 
+    buildout_sub_directory = lambda x: os.path.join(buildout_directory, x)
+    var_directory = buildout_sub_directory('var')
+
     # Make sure that the buildout directory exists on the remote
     if remote_sudo:
-        _sudo('mkdir -p {0:s}'.format(buildout_directory))
+        _sudo('mkdir -p {0:s}'.format(var_directory))
         _sudo('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
+        _sudo('chown {0:s} {1:s}'.format(effective_user, var_directory))
     else:
-        _run('mkdir -p {0:s}'.format(buildout_directory))
+        _run('mkdir -p {0:s}'.format(var_directory))
         _run('chown {0:s} {1:s}'.format(effective_user, buildout_directory))
+        _run('chown {0:s} {1:s}'.format(effective_user, var_directory))
 
     # Push
     annotations = annotate()
-
-    buildout_sub_directory = lambda x: os.path.join(buildout_directory, x)
 
     bin_directory = buildout_sub_directory(annotations['bin-directory'])
     eggs_directory = buildout_sub_directory(annotations['eggs-directory'])
     parts_directory = buildout_sub_directory(annotations['parts-directory'])
     products_directory = buildout_sub_directory('products')
-    var_directory = buildout_sub_directory('var')
 
     for directory in [bin_directory, eggs_directory, parts_directory]:
         _rsync(directory, os.path.join(directory, '*'),
@@ -394,12 +397,6 @@ def push():
            exclude=('blobstorage*', '*.fs', '*.old', '*.zip', '*.log',
                     '*.backup'),
            extra_opts='--ignore-existing')
-    # Chown
-    cmd = 'chown -R {0:s} {1:s}'.format(effective_user, var_directory)
-    if remote_sudo:
-        _sudo(cmd)
-    else:
-        _run(cmd)
 
     # Push 'etc' (created by some buildout scripts)
     etc_directory = os.path.join(buildout_directory, 'etc')
